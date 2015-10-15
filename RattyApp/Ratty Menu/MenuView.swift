@@ -10,14 +10,14 @@ import UIKit
 
 class MenuView: UIView {
     
-    override init() {
+    override init(frame: CGRect) {
         sections = StackView()
         sections.hideOverflowViews = true
         super.init(frame: CGRectZero)
         addSubview(sections)
     }
 
-    required init(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     

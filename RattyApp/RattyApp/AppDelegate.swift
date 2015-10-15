@@ -56,7 +56,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
     class func Shared() -> AppDelegate {
-        return UIApplication.sharedApplication().delegate! as AppDelegate
+        return UIApplication.sharedApplication().delegate! as! AppDelegate
     }
 
     func applicationWillResignActive(application: UIApplication) {
@@ -98,7 +98,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 if let meal = urlComps.valueForQueryKey("meal") {
                     if let timestamp = urlComps.valueForQueryKey("date") {
                         let dateObj = NSDate(timeIntervalSince1970: (timestamp as NSString).doubleValue)
-                        let userInfo: [NSObject: AnyObject] = ["date": dateObj, "meal": meal.toInt()!]
+                        let userInfo: [NSObject: AnyObject] = ["date": dateObj, "meal": Int(meal)!]
                         NSNotificationCenter.defaultCenter().postNotificationName(JumpToMealAndDateNotification, object: nil, userInfo: userInfo)
                     }
                 }
@@ -112,7 +112,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 extension NSURLComponents {
     func valueForQueryKey(key: String) -> String? {
-        if let items = (queryItems as? [NSURLQueryItem]) {
+        if let items = (queryItems as [NSURLQueryItem]?) {
             for item in items {
                 if item.name == key {
                     return item.value

@@ -11,11 +11,11 @@ import UIKit
 class MenuItemCell: UITableViewCell {
     override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        textLabel.font = UIFont(name: "AvenirNext-Medium", size: 16)
-        textLabel.textColor = UIColor.blackColor()
+        textLabel!.font = UIFont(name: "AvenirNext-Medium", size: 16)
+        textLabel!.textColor = UIColor.blackColor()
     }
 
-    required init(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }

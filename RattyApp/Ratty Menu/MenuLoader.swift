@@ -75,7 +75,7 @@ class MenuLoader: NSObject {
     }
     private func getCachedMenu() -> (meals: [DiningAPI.MealMenu], date: NSDate)? {
         if let data = NSData(contentsOfFile: cachePath) {
-            if let r: AnyObject = NSJSONSerialization.JSONObjectWithData(data, options: nil, error: nil) {
+            if let r: AnyObject = try? NSJSONSerialization.JSONObjectWithData(data, options: []) {
                 if let dict = r as? [String: AnyObject] {
                     if let menuJsons: AnyObject = dict["menus"] {
                         if let m = menuJsons as? [[String: AnyObject]] {
@@ -90,13 +90,13 @@ class MenuLoader: NSObject {
         return nil
     }
     private func cacheMenu(jsonResponse: [String: AnyObject]) {
-        let data = NSJSONSerialization.dataWithJSONObject(jsonResponse, options: nil, error: nil)!
+        let data = try! NSJSONSerialization.dataWithJSONObject(jsonResponse, options: [])
         data.writeToFile(cachePath, atomically: true)
         NSUserDefaults.standardUserDefaults().setDouble(NSDate.timeIntervalSinceReferenceDate(), forKey: "CachedMenuDate")
     }
     private var cachePath: String {
         get {
-            return (NSSearchPathForDirectoriesInDomains(.CachesDirectory, .UserDomainMask, true).first! as String).stringByAppendingPathComponent("MenuCache.json")
+            return (NSSearchPathForDirectoriesInDomains(.CachesDirectory, .UserDomainMask, true).first! as NSString).stringByAppendingPathComponent("MenuCache.json")
         }
     }
 }

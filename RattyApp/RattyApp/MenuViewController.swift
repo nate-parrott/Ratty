@@ -14,8 +14,8 @@ enum Meal {
 }
 
 func arePositionsEqual(p1: (date: NSDate, meal: Meal), p2: (date: NSDate, meal: Meal)) -> Bool {
-    let (date1: NSDate, meal1: Meal) = p1
-    let (date2: NSDate, meal2: Meal) = p2
+    let (date1, meal1): (NSDate, Meal) = p1
+    let (date2, meal2): (NSDate, Meal) = p2
     var mealsEqual = false
     switch (meal1, meal2) {
     case (.Index(let i1), .Index(let i2)): mealsEqual = i1 == i2
@@ -51,7 +51,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
         }
         
         NSNotificationCenter.defaultCenter().addObserver(self, selector: "jumpToCurrentMeal", name: ShouldJumpToCurrentMealNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "jumpToMeal:", name: JumpToMealAndDateNotification, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "jumpToMealWithNotification:", name: JumpToMealAndDateNotification, object: nil)
         NSNotificationCenter.defaultCenter().addObserver(self, selector: "reload", name: ReloadMenuNotification, object: nil)
         
         // index 0 is the splash image view
@@ -112,8 +112,8 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
         currentPosition = (date: NSDate(), meal: Meal.Nearest)
     }
     
-    func jumpToMeal(notif: NSNotification) {
-        currentPosition = (date: notif.userInfo!["date"]! as NSDate, meal: Meal.Index(i: notif.userInfo!["meal"]! as Int))
+    func jumpToMealWithNotification(notif: NSNotification) {
+        currentPosition = (date: notif.userInfo!["date"]! as! NSDate, meal: Meal.Index(i: notif.userInfo!["meal"]! as! Int))
     }
     
     override func viewDidLayoutSubviews() {
@@ -126,7 +126,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
     }
     
     func pageViewController(pageViewController: UIPageViewController, viewControllerBeforeViewController viewController: UIViewController) -> UIViewController? {
-        if let (date, meal) = (viewController as MenuTableViewController).time {
+        if let (date, meal) = (viewController as! MenuTableViewController).time {
             let prev = MenuTableViewController()
             if meal == 0 {
                 prev.time = (date.byAddingSeconds(-24 * 60 * 60), 2)
@@ -139,7 +139,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
     }
     
     func pageViewController(pageViewController: UIPageViewController, viewControllerAfterViewController viewController: UIViewController) -> UIViewController? {
-        if let (date, meal) = (viewController as MenuTableViewController).time {
+        if let (date, meal) = (viewController as! MenuTableViewController).time {
             let next = MenuTableViewController()
             if meal == 2 {
                 next.time = (date.byAddingSeconds(24 * 60 * 60), 0)
@@ -151,11 +151,11 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
         return nil
     }
     
-    func pageViewController(pageViewController: UIPageViewController, willTransitionToViewControllers pendingViewControllers: [AnyObject]) {
+    func pageViewController(pageViewController: UIPageViewController, willTransitionToViewControllers pendingViewControllers: [UIViewController]) {
         updateCurrentPage()
         pageTransitionTracker.startTracking()
         
-        if let tableVC = pendingViewControllers.first as MenuTableViewController? {
+        if let tableVC = pendingViewControllers.first as! MenuTableViewController? {
             tableVC.shouldReturnToToday = {
                 [weak self] in
                 self!.currentPosition = (date: NSDate(), meal: Meal.Nearest)
@@ -163,7 +163,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
         }
     }
     
-    func pageViewController(pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [AnyObject], transitionCompleted completed: Bool) {
+    func pageViewController(pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
         pageTransitionTracker.stopTracking()
         updateCurrentPage()
     }
@@ -181,7 +181,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
                 // load the current date, then update this:
                 let posAtStartOfLoad = currentPosition
                 SharedDiningAPI().getMenu("ratty", date: NSDate()) { (let menusOpt, let errorOpt) -> () in
-                    if arePositionsEqual(posAtStartOfLoad, self.currentPosition) {
+                    if arePositionsEqual(posAtStartOfLoad, p2: self.currentPosition) {
                         if let mealMenus = menusOpt {
                             if let meal = SharedDiningAPI().indexOfNearestMeal(mealMenus) {
                                 self.currentPosition = (date: NSDate(), meal: Meal.Index(i: meal))
@@ -206,10 +206,10 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
                     pageViewController.setViewControllers([pageVC], direction: isInFuture ? .Forward : .Reverse, animated: animate, completion: nil)
                     if animate {
                         UIView.animateWithDuration(0.25, animations: { () -> Void in
-                            self.updateCurrentPage(supressGradientAnimation: false)
+                            self.updateCurrentPage(false)
                             }, completion: nil)
                     } else {
-                        self.updateCurrentPage(supressGradientAnimation: true)
+                        self.updateCurrentPage(true)
                     }
                 }
             }
@@ -225,11 +225,19 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
     }
     
     private func _showingDate() -> NSDate {
-        return (pageViewController.viewControllers.first as MenuTableViewController?)?.time?.date ?? NSDate()
+        if let firstVC = pageViewController.viewControllers?.first, let tableVC = firstVC as? MenuTableViewController, let date = tableVC.time?.date {
+            return date
+        } else {
+            return NSDate()
+        }
     }
     
     private func _showingMealIndex() -> Int {
-        return (pageViewController.viewControllers.first as MenuTableViewController?)?.time?.meal ?? 0
+        if let firstVC = pageViewController.viewControllers?.first, let tableVC = firstVC as? MenuTableViewController, let idx = tableVC.time?.meal {
+            return idx
+        } else {
+            return 0
+        }
     }
     
     // MARK: Page transitions
@@ -242,11 +250,11 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
         
         var interpolatedMeal = CGFloat(_showingMealIndex())
         if pageTransitionTracker.isTracking {
-            interpolatedMeal = CGFloat((pageTransitionTracker.trackingViewController! as MenuTableViewController).time.meal) + pageTransitionTracker.progress
+            interpolatedMeal = CGFloat((pageTransitionTracker.trackingViewController! as! MenuTableViewController).time.meal) + pageTransitionTracker.progress
         }
         navView.selectedMeal = interpolatedMeal
         
-        gradientLayer.actions = supressGradientAnimation ? ["colors" as NSString: NSNull()] : nil
+        gradientLayer.actions = supressGradientAnimation ? ["colors" as String: NSNull()] : nil
         
         let (color1, color2) = gradientForMeal(interpolatedMeal)
         gradientLayer.colors = [color1.CGColor, color2.CGColor]
@@ -290,7 +298,7 @@ class MenuViewController: UIViewController, UIPageViewControllerDataSource, UIPa
     
     // MARK: Views
     lazy var navView: NavigationView = {
-        let nav = UINib(nibName: "Navigation", bundle: nil).instantiateWithOwner(nil, options: nil)[0] as NavigationView
+        let nav = UINib(nibName: "Navigation", bundle: nil).instantiateWithOwner(nil, options: nil)[0] as! NavigationView
         return nav
         }()
 }

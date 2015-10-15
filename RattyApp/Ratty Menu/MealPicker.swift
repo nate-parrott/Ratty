@@ -10,7 +10,7 @@ import UIKit
 
 class MealPicker: UIView {
     
-    override init() {
+    override init(frame: CGRect) {
         func createMealLabels() -> [UILabel] {
             let meals = ["breakfast", "lunch", "dinner"]
             return meals.map() {
@@ -56,7 +56,7 @@ class MealPicker: UIView {
     }
     
     func tappedMeal(sender: UITapGestureRecognizer) {
-        selectedMeal = find(mealLabels, sender.view! as UILabel)!
+        selectedMeal = (mealLabels).indexOf(sender.view! as! UILabel)!
         if let cb = onSelectedMealChanged {
             cb()
         }
@@ -72,7 +72,7 @@ class MealPicker: UIView {
     }
     var onSelectedMealChanged: (() -> ())?
 
-    required init(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
@@ -81,7 +81,7 @@ class MealPicker: UIView {
     var vibrancyView: UIVisualEffectView
     
     override func sizeThatFits(size: CGSize) -> CGSize {
-        let width = maxElement(mealLabels.map({ $0.sizeThatFits(size).width })) * CGFloat(countElements(mealLabels))
+        let width = mealLabels.map({ $0.sizeThatFits(size).width }).maxElement()! * CGFloat(mealLabels.count)
         return CGSizeMake(width, mealLabels[0].sizeThatFits(size).height + 10)
     }
 }

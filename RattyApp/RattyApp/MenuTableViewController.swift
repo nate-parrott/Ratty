@@ -32,7 +32,7 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
         tableView.indicatorStyle = .White
         tableView.showsVerticalScrollIndicator = false
         
-        errorButton = SDButton.buttonWithType(.Custom) as SDButton
+        errorButton = SDButton(type: .Custom) as SDButton
         errorButton.setTitle("Error. Retry?", forState: .Normal)
         errorButton.addTarget(self, action: "reload", forControlEvents: .TouchUpInside)
         errorButton.tintColor = UIColor.whiteColor()
@@ -77,7 +77,7 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
         }
         
         if let relativeDateString = relativeDateStringOpt {
-            let attributes: [NSObject: AnyObject] = [NSFontAttributeName as NSObject: boldFont as AnyObject]
+            let attributes: [String: AnyObject] = [NSFontAttributeName: boldFont as AnyObject]
             let a = NSAttributedString(string: relativeDateString + ", ", attributes: attributes)
             str.appendAttributedString(a)
         }
@@ -88,11 +88,11 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
         let mealString = ["Breakfast", "Lunch", "Dinner"][time.meal]
         let timeText = "\(dateString) — \(mealString)"
         
-        let timeAttributes: [NSObject: AnyObject] = [NSFontAttributeName as NSObject: ordinaryFont as AnyObject]
+        let timeAttributes: [String: AnyObject] = [NSFontAttributeName: ordinaryFont as AnyObject]
         str.appendAttributedString(NSAttributedString(string: timeText, attributes: timeAttributes))
         
         if daysFromToday != 0 {
-            let backAttributes: [NSObject: AnyObject] = [NSFontAttributeName as NSObject: smallFont as AnyObject]
+            let backAttributes: [String: AnyObject] = [NSFontAttributeName: smallFont as AnyObject]
             str.appendAttributedString(NSAttributedString(string: "\nreturn to today", attributes: backAttributes))
         }
         let label = UILabel(frame: CGRectMake(0, 0, 100, 40))
@@ -120,9 +120,9 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
             if let (date, meal) = time {
                 SharedDiningAPI().getMenu("ratty", date: date, callback: { (let menuOpts, let errorOpt) -> () in
                     if let menus = menuOpts {
-                        if meal < countElements(menus) {
+                        if meal < menus.count {
                             self.menu = menus[meal]
-                        } else if meal == 2 && countElements(menus) == 2 {
+                        } else if meal == 2 && menus.count == 2 {
                             // HACK: it's sunday, there's only 2 meals (breakfast + brunch),
                             // but since I'm too lazy to write a special UI for sunday, just show the Brunch
                             // meal as lunch AND dinner
@@ -151,10 +151,10 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
     }
     
     func updateUI() {
-        if let t = tableView? {
+        if let t = tableView {
             t.hidden = menu == nil
         }
-        if let e = errorButton? {
+        if let e = errorButton {
             e.hidden = !error
         }
     }
@@ -162,22 +162,26 @@ class MenuTableViewController: UIViewController, UITableViewDataSource, UITableV
     // MARK: - Table view data source
     
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        return countElements(menu?.sections ?? [])
+        if let m = menu {
+            return m.sections.count
+        } else {
+            return 0
+        }
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         let section = menu!.sections[section]
-        return countElements(section.items) + 1
+        return section.items.count + 1
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let section = menu!.sections[indexPath.section]
-        let cell = tableView.dequeueReusableCellWithIdentifier("MenuItemCell", forIndexPath: indexPath) as MenuItemCell
-        cell.textLabel.textAlignment = indexPath.row == 0 ? .Center : .Left
+        let cell = tableView.dequeueReusableCellWithIdentifier("MenuItemCell", forIndexPath: indexPath) as! MenuItemCell
+        cell.textLabel!.textAlignment = indexPath.row == 0 ? .Center : .Left
         if indexPath.row == 0 {
-            cell.textLabel.text = section.name.uppercaseString
+            cell.textLabel!.text = section.name.uppercaseString
         } else {
-            cell.textLabel.text = section.items[indexPath.row - 1]
+            cell.textLabel!.text = section.items[indexPath.row - 1]
         }
         let alpha: CGFloat = (indexPath.row == 0) ? 0.5 : (indexPath.row % 2 == 0 ? 0.25 : 0.125)
         cell.backgroundColor = UIColor(white: 1, alpha: alpha)

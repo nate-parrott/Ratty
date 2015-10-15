@@ -32,11 +32,11 @@ class TodayViewController: UIViewController, NCWidgetProviding {
         stack = StackView()
         view.addSubview(stack)
         
-        mealPicker = MealPicker()
+        mealPicker = MealPicker(frame: CGRectZero)
         mealPicker.onSelectedMealChanged = {
             [weak self] in
             var meal = self!.mealPicker.selectedMeal
-            if countElements(self!.loader.meals!) == 2 && meal == 2 {
+            if self!.loader.meals!.count == 2 && meal == 2 {
                 meal = 1
             }
             self!.dateOfSelectedMeal = NSDate()
@@ -76,7 +76,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
             label.text = loader.loading ? "Loading..." : "Couldn't load menu"
             stack.views = [label]
         } else if let menus = loader.meals {
-            let menuView = MenuView()
+            let menuView = MenuView(frame: CGRectZero)
             menuView.menu = menus[selectedMeal]
             stack.views = [menuView, mealPicker]
         } else {
@@ -94,7 +94,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
         return UIEdgeInsetsMake(defaultMarginInsets.top + 8, defaultMarginInsets.left - WidgetLeftMargin, defaultMarginInsets.bottom - 16, defaultMarginInsets.right + 6)
     }
     
-    func widgetPerformUpdateWithCompletionHandler(completionHandler: ((NCUpdateResult) -> Void)?) {
+    func widgetPerformUpdateWithCompletionHandler(completionHandler: ((NCUpdateResult) -> Void)) {
         loader.completionHandler = completionHandler
         loader.reloadIfNeeded()
     }

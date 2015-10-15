@@ -25,13 +25,13 @@ class MenuSectionView: UIView {
         label.label.textColor = UIColor.whiteColor()
         
         var strings: [String] = []
-        for i in 0..<(countElements(section.items)+1) {
+        for i in 0..<(section.items.count+1) {
             var itemsToShow = Array(section.items[0..<i])
-            let leftoverCount = countElements(section.items) - i
+            let leftoverCount = section.items.count - i
             if leftoverCount > 0 {
                 itemsToShow.append("\(leftoverCount) more")
             }
-            strings.append(", ".join(itemsToShow))
+            strings.append(itemsToShow.joinWithSeparator(", "))
         }
         label.strings = strings
         label.maxHeight = label.label.font.pointSize * 2 + 5
@@ -68,7 +68,7 @@ class MenuSectionView: UIView {
     var iconVibrancy: UIVisualEffectView
     var label: TextLabelWithAlternateContent
 
-    required init(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }

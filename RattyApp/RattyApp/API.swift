@@ -11,7 +11,7 @@ import UIKit
 extension NSDate {
     func getDateComponents() -> (day: Int, month: Int, year: Int) {
         let cal = NSCalendar.currentCalendar()
-        let comps = cal.components(.MonthCalendarUnit | .DayCalendarUnit | .YearCalendarUnit, fromDate: self)
+        let comps = cal.components([.NSMonthCalendarUnit, .NSDayCalendarUnit, .NSYearCalendarUnit], fromDate: self)
         return (day: comps.day, month: comps.month, year: comps.year)
     }
     func byAddingSeconds(seconds: NSTimeInterval) -> NSDate {
@@ -55,30 +55,30 @@ func distanceOfDateFromDateRange(date: NSDate, rangeStart: NSDate, rangeEnd: NSD
 
 class DiningAPI: NSObject {
     
-    struct Time : Printable, Equatable {
+    struct Time : CustomStringConvertible, Equatable {
         var hour, minute: Int
         func convertToDateOnDate(date: NSDate) -> NSDate {
-            let comps = NSCalendar.currentCalendar().components(.CalendarUnitDay | .CalendarUnitMonth | .CalendarUnitYear, fromDate: date)
+            let comps = NSCalendar.currentCalendar().components([.Day, .Month, .Year], fromDate: date)
             comps.hour = hour
             comps.minute = minute
             return NSCalendar.currentCalendar().dateFromComponents(comps)!
         }
         var description: String {
-            return NSString(format: "%d:%02d", hour, minute)
+            return NSString(format: "%d:%02d", hour, minute) as String
         }
     }
     
-    struct MealMenu : Printable {
+    struct MealMenu : CustomStringConvertible {
         var startTime, endTime: Time
         var sections: [MenuSection]
         init(json: [String: AnyObject]) {
-            startTime = Time(hour: (json["start_hour"]! as Int), minute: (json["start_minute"]! as Int))
-            endTime = Time(hour: (json["end_hour"]! as Int), minute: (json["end_minute"]! as Int))
+            startTime = Time(hour: (json["start_hour"]! as! Int), minute: (json["start_minute"]! as! Int))
+            endTime = Time(hour: (json["end_hour"]! as! Int), minute: (json["end_minute"]! as! Int))
             let sectionNames = ["bistro", "chef's corner", "daily sidebars", "grill", "roots & shoots"]
             sections = sectionNames.map({
                 (name: String) -> MenuSection? in
                 if let items = json[name] as? [String] {
-                    if countElements(items) > 0 {
+                    if items.count > 0 {
                         return MenuSection(name: name, items: items)
                     } else {
                         return nil
@@ -88,15 +88,15 @@ class DiningAPI: NSObject {
                 }}).filter({ $0 != nil }).map({ $0! })
         }
         var description: String {
-            return "Menu from \(startTime) — \(endTime): " + " ".join(sections.map({ $0.description }))
+            return "Menu from \(startTime) — \(endTime): " + sections.map({ $0.description }).joinWithSeparator(" ")
         }
     }
     
-    struct MenuSection : Printable {
+    struct MenuSection : CustomStringConvertible {
         var name: String
         var items: [String]
         var description: String {
-            return name.uppercaseString + "\n" + "\n".join(items) + "\n"
+            return name.uppercaseString + "\n" + items.joinWithSeparator("\n") + "\n"
         }
     }
     
@@ -113,7 +113,7 @@ class DiningAPI: NSObject {
             }
         }
         allParams["client_id"] = "66438301-1039-4178-ae2d-dd1675d771aa"
-        comps.queryItems = Array(map(allParams.keys, {
+        comps.queryItems = Array(allParams.keys.map({
             (key: String) in
             return NSURLQueryItem(name: key, value: allParams[key]!)
         }))
@@ -123,7 +123,7 @@ class DiningAPI: NSObject {
         
         let req = NSMutableURLRequest(URL: comps.URL!)
         if let cached = NSURLCache.sharedURLCache().cachedResponseForRequest(req) {
-            if let response = NSJSONSerialization.JSONObjectWithData(cached.data, options: nil, error: nil) as? [String: AnyObject] {
+            if let response = (try? NSJSONSerialization.JSONObjectWithData(cached.data, options: [])) as? [String: AnyObject] {
                 //println("valid JSON cached response")
                 let s = NSString(data: cached.data, encoding: NSUTF8StringEncoding)
                 //println("RESP: \(s)")
@@ -139,7 +139,7 @@ class DiningAPI: NSObject {
                 dispatch_async(dispatch_get_main_queue(), { () -> Void in
                     DecrementNetworkActivityCount()
                     if let data = dataOpt {
-                        if let responseDict = NSJSONSerialization.JSONObjectWithData(data, options: nil, error: nil) as? [String: AnyObject] {
+                        if let responseDict = (try? NSJSONSerialization.JSONObjectWithData(data, options: [])) as? [String: AnyObject] {
                             NSURLCache.sharedURLCache().storeCachedResponse(NSCachedURLResponse(response: response!, data: data), forRequest: req)
                             
                             let s = NSString(data: data, encoding: NSUTF8StringEncoding)
@@ -189,12 +189,12 @@ class DiningAPI: NSObject {
     
     func indexOfNearestMeal(meals: [MealMenu]) -> Int? {
         let now = NSDate()
-        if let meal = meals.sorted({ (let m1, let m2) -> Bool in
-            let d1 = distanceOfDateFromDateRange(now, m1.startTime.convertToDateOnDate(now), m1.endTime.convertToDateOnDate(now))
-            let d2 = distanceOfDateFromDateRange(now, m2.startTime.convertToDateOnDate(now), m2.endTime.convertToDateOnDate(now))
+        if let meal = meals.sort({ (let m1, let m2) -> Bool in
+            let d1 = distanceOfDateFromDateRange(now, rangeStart: m1.startTime.convertToDateOnDate(now), rangeEnd: m1.endTime.convertToDateOnDate(now))
+            let d2 = distanceOfDateFromDateRange(now, rangeStart: m2.startTime.convertToDateOnDate(now), rangeEnd: m2.endTime.convertToDateOnDate(now))
             return d1 < d2
         }).first {
-            for i in 0..<countElements(meals) {
+            for i in 0..<meals.count {
                 if meals[i].startTime == meal.startTime {
                     return i
                 }

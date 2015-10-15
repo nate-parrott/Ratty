@@ -20,7 +20,7 @@ class TextLabelWithAlternateContent: UIView {
         label.text = _stringForSize(bounds.size)
         let size = label.sizeThatFits(bounds.size)
         label.frame = CGRectMake(0, 0, size.width, size.height)
-        let c = _sizeForString(label.text!, maxSize: bounds.size)
+        // let c = _sizeForString(label.text!, maxSize: bounds.size)
         // println("height that fits: \(size.height); height: \(bounds.size.height); calculated height: \(c.height)")
     }
     var strings: [String] = [] {
@@ -30,13 +30,13 @@ class TextLabelWithAlternateContent: UIView {
     }
     private var _stringsByLength: [String] {
         get {
-            return strings.sorted({ countElements($0) > countElements($1) })
+            return strings.sort({ $0.characters.count > $1.characters.count })
         }
     }
     private func _applyLabelAttributesToStringForLayout(string: String) -> NSAttributedString {
-        let pStyle = NSParagraphStyle.defaultParagraphStyle().mutableCopy() as NSMutableParagraphStyle
+        let pStyle = NSParagraphStyle.defaultParagraphStyle().mutableCopy() as! NSMutableParagraphStyle
         pStyle.lineBreakMode = .ByWordWrapping
-        let attrs: [NSObject: AnyObject] = [NSFontAttributeName as NSObject: label.font! as AnyObject, NSParagraphStyleAttributeName as NSObject: pStyle as AnyObject]
+        let attrs: [String: AnyObject] = [NSFontAttributeName as String: label.font! as AnyObject, NSParagraphStyleAttributeName as String: pStyle as AnyObject]
         return NSAttributedString(string: string, attributes: attrs)
     }
     private func _sizeForString(string: String, maxSize: CGSize) -> CGSize {

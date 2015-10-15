@@ -27,14 +27,14 @@ class PageTransitionTracker: NSObject {
             return
         }
         isTracking = true
-        trackingViewController = (pageViewController.viewControllers.first? as UIViewController)
+        trackingViewController = (pageViewController.viewControllers?.first as UIViewController?)
         displayLink = CADisplayLink(target: self, selector: "_displayLink")
         displayLink!.addToRunLoop(NSRunLoop.mainRunLoop(), forMode: NSRunLoopCommonModes)
         initialX = getTrackingViewCenterX()
     }
     
     private func getTrackingViewCenterX() -> CGFloat {
-        return (trackingViewController!.view.layer.presentationLayer() as CALayer).convertPoint(CGPointMake(CGRectGetMidX((trackingViewController!.view.layer.presentationLayer() as CALayer).bounds), 0), toLayer: pageViewController.view.layer).x
+        return (trackingViewController!.view.layer.presentationLayer() as! CALayer).convertPoint(CGPointMake(CGRectGetMidX((trackingViewController!.view.layer.presentationLayer() as! CALayer).bounds), 0), toLayer: pageViewController.view.layer).x
     }
     
     func stopTracking() {
